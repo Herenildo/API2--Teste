@@ -1,6 +1,6 @@
 from django.forms import ModelChoiceField
 from rest_framework import serializers
-from escola.models import Aluno, Curso
+from escola.models import Aluno, Curso, Matricula
 import io
 from rest_framework.parsers import JSONParser
 
@@ -20,12 +20,18 @@ class AlunoSerializer(serializers.Serializer):
         instance.rg = validated_data.get('rg', instance.rg)
         instance.cpf = validated_data.get('cpf', instance.cpf)
         instance.data_nascimento = validated_data.get('data_nascimento', instance.data_nascimento)
-
+        instance.save()
+        return instance
 class CursoSerializer(serializers.Serializer):
-    id=serializers.IntegerField(Read_only=True)
+    NIVEL = (
+    ('B', 'Basico'),
+    ('I', 'Intermediario'),
+    ('A', 'Avancado')
+)
+    id = serializers.IntegerField(read_only=True)
     codigo_curso=serializers.CharField(max_length=10)
     descricao=serializers.CharField(max_length=100)
-    nivel=serializers.CharField(max_length=1,choices=(('B','Basico'),('I','Intermediario'),('A','Avancado')), blank=False,null=False,default='B')
+    nivel=serializers.ChoiceField(choices=NIVEL, default='B')
 
 
     def create(self, validated_data):
@@ -35,4 +41,26 @@ class CursoSerializer(serializers.Serializer):
         instance.codigo_curso = validated_data.get('codigo_curso', instance.codigo_curso)
         instance.descricao = validated_data.get('descricao', instance.descricao)
         instance.nivel = validated_data.get('nivel', instance.nivel)
+        instance.save()
+        return instance
+
+class MatriculaSerializer(serializers.Serializer):
+    PERIODO=(
+        ('M','Matutino'),
+        ('V','Vespertino'),
+        ('N','Noturno'),
+    )
+    id=serializers.IntegerField(read_only=True)
+    aluno=serializers.PrimaryKeyRelatedField(queryset=Aluno.objects.all())
+    curso=serializers.PrimaryKeyRelatedField(queryset=Curso.objects.all())
+    periodo=serializers.ChoiceField(choices=PERIODO, default='M')
+
+    def create(self, validated_data):
+        return Matricula.objects.create(**validated_data)
     
+    def update(self, instance, validated_data):
+        instance.aluno=validated_data.get('aluno',instance.aluno)
+        instance.curso=validated_data.get('curso',instance.curso)
+        instance.periodo=validated_data.get('periodo', instance.periodo)
+        instance.save()
+        return instance
