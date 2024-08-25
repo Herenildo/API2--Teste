@@ -1,3 +1,4 @@
+from dataclasses import fields
 from django.forms import ModelChoiceField
 from rest_framework import serializers
 from escola.models import Aluno, Curso, Matricula
@@ -45,6 +46,7 @@ class CursoSerializer(serializers.Serializer):
         return instance
 
 class MatriculaSerializer(serializers.Serializer):
+
     PERIODO=(
         ('M','Matutino'),
         ('V','Vespertino'),
@@ -64,3 +66,20 @@ class MatriculaSerializer(serializers.Serializer):
         instance.periodo=validated_data.get('periodo', instance.periodo)
         instance.save()
         return instance
+    
+class ListaMatriculasAlunoSerializer(serializers.Serializer):
+    curso = serializers.ReadOnlyField(source='curso.descricao')
+    periodo=serializers.SerializerMethodField()
+    class Meta:
+        model= Matricula
+        fields = ['curso','periodo']
+    def get_periodo(self,obj):
+        return obj.get_periodo_display()
+    
+# ...
+
+class ListaAlunosMatriculadosSerializer(serializers.ModelSerializer):
+    aluno_nome = serializers.ReadOnlyField(source='aluno.nome')
+    class Meta:
+        model = Matricula
+        fields = ['aluno_nome']
